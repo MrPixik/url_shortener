@@ -9,32 +9,37 @@ import (
 
 var URLPool = make(map[string]string)
 
-func MainPageHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodPost:
-
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return
-		}
-
-		URL := string(body)
-		hasher := md5.New()
-		shortURL := "/" + hex.EncodeToString(hasher.Sum(body)[:4])
-		URLPool[shortURL] = URL
-
-		w.WriteHeader(201)
-		w.Header().Set("Content-Type", "text/plain")
-		w.Write([]byte("http://localhost:8080" + shortURL))
-
-	case http.MethodGet:
-		originalURL, ok := URLPool[r.URL.Path]
-		if !ok {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.Header().Set("Location", originalURL)
-		w.WriteHeader(307)
+func MainPagePostHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
 	}
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	URL := string(body)
+	hasher := md5.New()
+	shortURL := "/" + hex.EncodeToString(hasher.Sum(body)[:4])
+	URLPool[shortURL] = URL
+
+	w.Header().Set("Content-Type", "text/plain")
+	w.WriteHeader(http.StatusCreated)
+	w.Write([]byte("http://localhost:8080" + shortURL))
+}
+
+func MainPageGetHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		w.WriteHeader(http.StatusMethodNotAllowed)
+		return
+	}
+	originalURL, ok := URLPool[r.URL.Path]
+	if !ok {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	w.Header().Set("Location", originalURL)
+	w.WriteHeader(http.StatusTemporaryRedirect)
 }
