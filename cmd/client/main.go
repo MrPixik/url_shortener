@@ -2,22 +2,15 @@ package main
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
-	"io"
-	"net/http"
+	"github.com/go-resty/resty/v2"
 	"os"
 	"strings"
 )
 
-/*
-Server testing manually
-*/
-func main() {
-	endpoint := "http://localhost:8080/"
-
+func getStr(msg string) string {
 	//Invite in console
-	fmt.Println("Enter your URL:")
+	fmt.Println(msg)
 
 	//Open standard input from console
 	reader := bufio.NewReader(os.Stdin)
@@ -28,20 +21,26 @@ func main() {
 		panic(err)
 	}
 	longUrl = strings.TrimSuffix(longUrl, "\n")
+	return longUrl
+}
+
+/*
+Server testing manually
+*/
+func main() {
+	endpoint := "http://localhost:8080/"
+
+	longUrl := getStr("Enter your URL:")
 
 	data := []byte(longUrl)
 
-	client := &http.Client{}
+	client := resty.New()
 
 	//Creating POST request
-	req, err := http.NewRequest(http.MethodPost, endpoint, bytes.NewBuffer(data))
-	if err != nil {
-		panic(err)
-	}
-
-	req.Header.Set("Content-Type", "text/plain")
-
-	resp, err := client.Do(req)
+	resp, err := client.R().
+		//SetHeader("Content-Type", "text/plain").
+		SetBody(data).
+		Post(endpoint)
 	if err != nil {
 		panic(err)
 	}
@@ -49,11 +48,6 @@ func main() {
 	//Response processing
 	fmt.Println(resp.Status)
 
-	defer resp.Body.Close()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(string(body))
+	fmt.Println(string(resp.Body()))
 
 }
