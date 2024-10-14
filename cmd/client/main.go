@@ -28,7 +28,7 @@ func getStr(msg string) string {
 Server testing manually
 */
 func main() {
-	endpoint := "http://localhost:8080/"
+	endpoint := "http://localhost:8999/"
 
 	longUrl := getStr("Enter your URL:")
 
@@ -46,7 +46,7 @@ func main() {
 	}
 
 	//Response processing
-	fmt.Println(resp.Status)
+	fmt.Println("Post response status: " + resp.Status())
 
 	fmt.Println(string(resp.Body()))
 

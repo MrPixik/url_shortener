@@ -3,6 +3,7 @@ package server
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"github.com/MrPixik/url_shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"io"
 	"net/http"
@@ -10,7 +11,22 @@ import (
 
 var URLPool = make(map[string]string)
 
-func MainPagePostHandler(w http.ResponseWriter, r *http.Request) {
+// InitHandlers func for creating new chi.Router with all Handlers
+func InitHandlers(cfg *config.Config) chi.Router {
+	router := chi.NewRouter()
+
+	router.Route("/", func(r chi.Router) {
+		r.Get("/{id}", func(w http.ResponseWriter, r *http.Request) {
+			MainPageGetHandler(w, r, cfg)
+		})
+		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
+			MainPagePostHandler(w, r, cfg)
+		})
+	})
+	return router
+}
+
+func MainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -30,10 +46,10 @@ func MainPagePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
-	w.Write([]byte("http://localhost:8080/" + shortURL))
+	w.Write([]byte("http://" + cfg.ShortURLAddr + "/" + shortURL))
 }
 
-func MainPageGetHandler(w http.ResponseWriter, r *http.Request) {
+func MainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	//fmt.Println("\"" + chi.URLParam(r, "id") + "\"" + " get")
 	originalURL, ok := URLPool[chi.URLParam(r, "id")]
 	if !ok {

@@ -5,7 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"github.com/go-chi/chi/v5"
+	"github.com/MrPixik/url_shortener/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -13,6 +13,8 @@ import (
 	"net/http/httptest"
 	"testing"
 )
+
+var defaultCfg = config.InitConfig()
 
 func createHash(url string) string {
 	hasher := md5.New()
@@ -47,10 +49,11 @@ func TestMainPagePostHandler(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			response := httptest.NewRecorder()
 
-			MainPagePostHandler(response, request)
+			MainPagePostHandler(response, request, defaultCfg)
 			result := response.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -99,7 +102,7 @@ func TestMainPagePostBadRequestHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, &errorReader{})
 			response := httptest.NewRecorder()
 
-			MainPagePostHandler(response, request)
+			MainPagePostHandler(response, request, defaultCfg)
 
 			result := response.Result()
 
@@ -139,11 +142,7 @@ func TestMainPageGetHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			router := chi.NewRouter()
-			router.Route("/", func(router chi.Router) {
-				router.Get("/{id}", MainPageGetHandler)
-				router.Post("/", MainPagePostHandler)
-			})
+			router := InitHandlers(defaultCfg)
 
 			postRequest := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("https://practicum.yandex.ru/")))
 			postResponse := httptest.NewRecorder()
