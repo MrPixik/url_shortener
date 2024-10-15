@@ -28,7 +28,7 @@ func getStr(msg string) string {
 Server testing manually
 */
 func main() {
-	endpoint := "http://localhost:8999/"
+	endpoint := "http://localhost:8080/"
 
 	longUrl := getStr("Enter your URL:")
 

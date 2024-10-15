@@ -38,6 +38,7 @@ func MainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		http.Error(w, "Empty URL", http.StatusBadRequest)
 		return
 	}
+
 	//fmt.Println("Received URL:", URL)
 	hasher := md5.New()
 	shortURL := hex.EncodeToString(hasher.Sum(body)[0:12])
