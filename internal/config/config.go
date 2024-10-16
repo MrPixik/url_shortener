@@ -11,21 +11,22 @@ type Config struct {
 	ShortURLAddr    string `env:"BASE_URL"`
 }
 
+var Cfg *Config
+
 // InitConfig func for config initialization
-func InitConfig() *Config {
-	config := &Config{}
+func InitConfig() {
+	cfg := &Config{}
+	Cfg = cfg
 
-	env.Parse(config)
+	env.Parse(Cfg)
 
-	if config.LocalServerAddr == "" {
-		pflag.StringVar(&config.LocalServerAddr, "a", "localhost:8080", "local server address")
+	if Cfg.LocalServerAddr == "" {
+		pflag.StringVar(&Cfg.LocalServerAddr, "a", "localhost:8080", "local server address")
 	}
 
-	if config.ShortURLAddr == "" {
-		pflag.StringVar(&config.ShortURLAddr, "b", "localhost:8080", "Short URL address")
+	if Cfg.ShortURLAddr == "" {
+		pflag.StringVar(&Cfg.ShortURLAddr, "b", "localhost:8080", "Short URL address")
 	}
 
 	pflag.Parse()
-
-	return config
 }

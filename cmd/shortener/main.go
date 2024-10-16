@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/MrPixik/url_shortener/internal/app/middleware"
 	"github.com/MrPixik/url_shortener/internal/app/server"
 	"github.com/MrPixik/url_shortener/internal/config"
 	"net/http"
@@ -9,9 +10,10 @@ import (
 
 func main() {
 
-	config := config.InitConfig()
-	router := server.InitHandlers(config)
+	config.InitConfig()
+	middleware.InitLogger()
+	router := server.InitHandlers(config.Cfg, middleware.Logger)
 
-	fmt.Println("Starting server at " + config.LocalServerAddr)
-	http.ListenAndServe(config.LocalServerAddr, router)
+	fmt.Println("Starting server at " + config.Cfg.LocalServerAddr)
+	http.ListenAndServe(config.Cfg.LocalServerAddr, router)
 }

@@ -53,7 +53,7 @@ func TestMainPagePostHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			response := httptest.NewRecorder()
 
-			MainPagePostHandler(response, request, defaultCfg)
+			mainPagePostHandler(response, request, defaultCfg)
 			result := response.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -102,7 +102,7 @@ func TestMainPagePostBadRequestHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, &errorReader{})
 			response := httptest.NewRecorder()
 
-			MainPagePostHandler(response, request, defaultCfg)
+			mainPagePostHandler(response, request, defaultCfg)
 
 			result := response.Result()
 
