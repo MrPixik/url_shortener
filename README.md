@@ -37,7 +37,7 @@ To install and run this project locally:
 1. Clone the repository:
 
 ``` bash
-git clone https://github.com/yourusername/url_shortener.git
+git clone https://github.com/MrPixik/url_shortener.git
 cd url_shortener
 ```
 2. Install dependencies:
