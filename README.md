@@ -1,32 +1,109 @@
-# go-musthave-shortener-tpl
+# URL Shortener
 
-Шаблон репозитория для трека «Сервис сокращения URL».
+A URL shortening service written in Go that allows users to submit URLs and receive shortened versions in return.
 
-## Начало работы
+## Project Structure
 
-1. Склонируйте репозиторий в любую подходящую директорию на вашем компьютере.
-2. В корне репозитория выполните команду `go mod init <name>` (где `<name>` — адрес вашего репозитория на GitHub без префикса `https://`) для создания модуля.
-
-## Обновление шаблона
-
-Чтобы иметь возможность получать обновления автотестов и других частей шаблона, выполните команду:
-
+```bash
+url_shortener/
+├── .github/                    # GitHub workflows for CI/CD
+│   ├── workflows/
+│   │   ├── shortenertest.yml    # Test workflow
+│   │   └── statictest.yml       # Linter/static analysis workflow
+├── cmd/
+│   ├── client/                  # Client-side implementation
+│   │   └── main.go
+│   ├── shortener/               # Server-side implementation
+│   │   ├── main.go              # Main entry point for the shortener service
+│   │   └── README.md            # Documentation for the shortener
+├── internal/
+│   ├── app/
+│   │   ├── middleware/          # Middleware logic (e.g., logging)
+│   │   ├── models/              # Models and EasyJSON files
+│   │   │   ├── easy_json_models.go         # Models for URLRequest and URLResponse
+│   │   │   └── easy_json_models_easyjson.go # Generated EasyJSON code
+│   │   ├── server/              # Server handlers and tests
+│   │   │   ├── handler.go       # URL shortening handler
+│   │   │   ├── handler_test.go  # Unit tests for the handler
+│   └── config/                  # Configuration
+│       └── config.go
+├── go.mod                       # Go module file
+└── .gitignore                   # Git ignore file
 ```
-git remote add -m main template https://github.com/Yandex-Practicum/go-musthave-shortener-tpl.git
+## Installation
+
+To install and run this project locally:
+
+1. Clone the repository:
+
+``` bash
+git clone https://github.com/MrPixik/url_shortener.git
+cd url_shortener
 ```
+2. Install dependencies:
 
-Для обновления кода автотестов выполните команду:
-
+```bash
+go mod tidy
 ```
-git fetch template && git checkout template/main .github
+3. Build and run the server:
+
+```bash
+cd cmd/shortener
+go run main.go
 ```
+4. You can now interact with the server using any HTTP client (e.g., curl or Postman).
 
-Затем добавьте полученные изменения в свой репозиторий.
+## Usage
 
-## Запуск автотестов
+Shortening a URL
+To shorten a URL, send a POST request to the server with a JSON payload containing the URL to be shortened:
 
-Для успешного запуска автотестов называйте ветки `iter<number>`, где `<number>` — порядковый номер инкремента. Например, в ветке с названием `iter4` запустятся автотесты для инкрементов с первого по четвёртый.
+```bash
+curl -X POST http://localhost:8080/shorten \
+     -H "Content-Type: application/json" \
+     -d '{"url":"https://www.example.com"}'
+```
+Example response:
 
-При мёрже ветки с инкрементом в основную ветку `main` будут запускаться все автотесты.
+```json
+{
+  "url": "http://localhost:8080/abc123"
+}
+```
+Expanding a URL
+To retrieve the original URL, send a GET request to the shortened URL:
 
-Подробнее про локальный и автоматический запуск читайте в [README автотестов](https://github.com/Yandex-Practicum/go-autotests).
+```bash
+curl http://localhost:8080/abc123
+```
+## Configuration
+
+The server can be configured through the internal/config/config.go file, where you can specify parameters such as:
+
+ShortURLAddr - the base address for shortened URLs
+
+## Testing
+
+Unit tests are located in internal/app/server/handler_test.go. To run the tests, use the following command:
+
+```bash
+go test ./...
+```
+## Middleware
+
+Logging: The project includes a logging middleware in internal/app/middleware/logging.go that logs incoming requests and responses.
+
+## JSON Handling with EasyJSON
+
+The project uses EasyJSON for high-performance JSON serialization and deserialization. Models for the request and response are located in internal/app/models/easy_json_models.go. The EasyJSON code is automatically generated using the go generate command.
+
+To regenerate EasyJSON files, run:
+
+```bash
+go generate ./...
+```
+## CI/CD
+This project includes GitHub Actions workflows for continuous integration:
+
+shortenertest.yml: Runs the tests on each push.
+staticcheck.yml: Performs static analysis using Go linters.
