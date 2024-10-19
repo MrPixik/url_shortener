@@ -5,20 +5,19 @@ import (
 	"encoding/hex"
 	"github.com/MrPixik/url_shortener/internal/app/middleware"
 	"github.com/MrPixik/url_shortener/internal/app/models"
+	easyjson2 "github.com/MrPixik/url_shortener/internal/app/models/easyjson"
 	"github.com/MrPixik/url_shortener/internal/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/mailru/easyjson"
 	"go.uber.org/zap"
 	"io"
 	"net/http"
+	"os"
 )
-
-var uRLPool = make(map[string]string)
 
 func generateShortUrl(longUrl string) string {
 	hasher := md5.New()
 	shortURL := hex.EncodeToString(hasher.Sum([]byte(longUrl))[0:12])
-	uRLPool[shortURL] = longUrl
 	return shortURL
 }
 
@@ -59,6 +58,19 @@ func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 	shortURL := generateShortUrl(URL)
 	//fmt.Println("\"" + "http://localhost:8080/" + shortURL + "\"" + " post")
 
+	//Writing to file
+	fileHandler, err := models.NewFileHandler(cfg.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	err = fileHandler.WriteURLToFile(&easyjson2.URLFileRecord{
+		Original: URL,
+		Short:    shortURL,
+	})
+	if err != nil {
+		return
+	}
+
 	w.Header().Set("Content-Type", "text/plain")
 	w.WriteHeader(http.StatusCreated)
 	w.Write([]byte("http://" + cfg.ShortURLAddr + "/" + shortURL))
@@ -66,7 +78,7 @@ func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 
 func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 
-	var urlReq models.URLRequest
+	var urlReq easyjson2.URLRequest
 	err := easyjson.UnmarshalFromReader(r.Body, &urlReq)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -76,8 +88,21 @@ func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.C
 	//fmt.Println("Received URL:", URL)
 	shortURL := generateShortUrl(urlReq.URL)
 
-	urlRes := models.URLResponse{
+	urlRes := easyjson2.URLResponse{
 		URL: "http://" + cfg.ShortURLAddr + "/" + shortURL,
+	}
+
+	//Writing to file
+	fileHandler, err := models.NewFileHandler(cfg.FileStoragePath, os.O_WRONLY|os.O_CREATE|os.O_APPEND)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	err = fileHandler.WriteURLToFile(&easyjson2.URLFileRecord{
+		Original: urlReq.URL,
+		Short:    shortURL,
+	})
+	if err != nil {
+		return
 	}
 	//fmt.Println("\"" + "http://localhost:8080/" + shortURL + "\"" + " post")
 
@@ -90,11 +115,25 @@ func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.C
 
 func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config) {
 	//fmt.Println("\"" + chi.URLParam(r, "id") + "\"" + " get")
-	originalURL, ok := uRLPool[chi.URLParam(r, "id")]
-	if !ok {
-		w.WriteHeader(http.StatusBadRequest)
-		return
+	reqShortURL := chi.URLParam(r, "id")
+	fileHandler, err := models.NewFileHandler(cfg.FileStoragePath, os.O_RDONLY|os.O_CREATE)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
-	w.Header().Set("Location", originalURL)
-	w.WriteHeader(http.StatusTemporaryRedirect)
+	for {
+		record, err := fileHandler.ReadURLFromFile()
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
+		}
+		if record.Short == reqShortURL {
+			w.Header().Set("Location", record.Original)
+			w.WriteHeader(http.StatusTemporaryRedirect)
+			return
+		}
+
+	}
+	w.WriteHeader(http.StatusBadRequest)
+
 }

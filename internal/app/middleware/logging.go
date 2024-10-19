@@ -10,6 +10,7 @@ var Logger *zap.SugaredLogger
 
 type Log interface {
 	Info(args ...interface{})
+	Infoln(args ...interface{})
 }
 
 func InitLogger() {
@@ -37,7 +38,7 @@ func (r responseWriterWithLogging) WriteHeader(status int) {
 	r.ResponseWriter.WriteHeader(status)
 }
 
-func LoggingMiddleware(logger *zap.SugaredLogger) func(http.Handler) http.Handler {
+func LoggingMiddleware(logger Log) func(http.Handler) http.Handler {
 	return func(h http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			responseData := &responseData{}
