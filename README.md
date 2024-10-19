@@ -18,7 +18,7 @@ url_shortener/
 │   │   └── README.md            # Documentation for the shortener
 ├── internal/
 │   ├── app/
-│   │   ├── middleware/          # Middleware logic (e.g., logging)
+│   │   ├── middleware/          # Middleware logic (e.g., logging, compressing# )
 │   │   ├── models/              # Models and EasyJSON files
 │   │   │   ├── easy_json_models.go         # Models for URLRequest and URLResponse
 │   │   │   └── easy_json_models_easyjson.go # Generated EasyJSON code
@@ -92,6 +92,8 @@ go test ./...
 ## Middleware
 
 Logging: The project includes a logging middleware in internal/app/middleware/logging.go that logs incoming requests and responses.
+
+Compressing: The project includes a logging middleware in internal/app/middleware/compressing.go that provides data compression and unpacking for incoming requests and responses. 
 
 ## JSON Handling with EasyJSON
 
