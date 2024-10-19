@@ -8,6 +8,10 @@ import (
 
 var Logger *zap.SugaredLogger
 
+type Log interface {
+	Info(args ...interface{})
+}
+
 func InitLogger() {
 	logger, _ := zap.NewProduction()
 	Logger = logger.Sugar()
