@@ -17,8 +17,7 @@ import (
 
 func generateShortUrl(longUrl string) string {
 	hasher := md5.New()
-	shortURL := hex.EncodeToString(hasher.Sum([]byte(longUrl))[0:12])
-	return shortURL
+	return hex.EncodeToString(hasher.Sum([]byte(longUrl))[0:12])
 }
 
 // InitHandlers func for creating new chi.Router with all Handlers
@@ -34,8 +33,10 @@ func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger) chi.Router {
 		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
 			mainPagePostHandler(w, r, cfg)
 		})
-		r.Post("/api/shorten", func(w http.ResponseWriter, r *http.Request) {
-			shortenURLPostHandler(w, r, cfg)
+		r.Route("/api", func(r chi.Router) {
+			r.Post("/shorten", func(w http.ResponseWriter, r *http.Request) {
+				shortenURLPostHandler(w, r, cfg)
+			})
 		})
 	})
 	return router
@@ -126,6 +127,10 @@ func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 			if err == io.EOF {
 				break
 			}
+		}
+		if record == nil {
+			w.WriteHeader(http.StatusBadRequest)
+			return
 		}
 		if record.Short == reqShortURL {
 			w.Header().Set("Location", record.Original)

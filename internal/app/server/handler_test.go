@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"github.com/MrPixik/url_shortener/internal/app/middleware"
 	"github.com/MrPixik/url_shortener/internal/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,11 +15,15 @@ import (
 	"testing"
 )
 
-var defaultCfg = config.InitConfig()
+func init() {
+	config.InitConfig()
+	config.Cfg.FileStoragePath = "S:\\MYFILES\\programming\\Go\\Git Projects\\url_shortener\\tmp\\short-url-db.json"
+	middleware.InitLogger()
+}
 
 func createHash(url string) string {
 	hasher := md5.New()
-	return hex.EncodeToString(hasher.Sum([]byte(url))[:12])
+	return hex.EncodeToString(hasher.Sum([]byte(url))[0:12])
 }
 
 func TestMainPagePostHandler(t *testing.T) {
@@ -53,7 +58,7 @@ func TestMainPagePostHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			response := httptest.NewRecorder()
 
-			mainPagePostHandler(response, request, defaultCfg)
+			mainPagePostHandler(response, request, config.Cfg)
 			result := response.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -102,7 +107,7 @@ func TestMainPagePostBadRequestHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, &errorReader{})
 			response := httptest.NewRecorder()
 
-			mainPagePostHandler(response, request, defaultCfg)
+			mainPagePostHandler(response, request, config.Cfg)
 
 			result := response.Result()
 
@@ -142,7 +147,7 @@ func TestMainPageGetHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			router := InitHandlers(defaultCfg)
+			router := InitHandlers(config.Cfg, middleware.Logger)
 
 			postRequest := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("https://practicum.yandex.ru/")))
 			postResponse := httptest.NewRecorder()

@@ -13,5 +13,5 @@ type URLRequest struct {
 
 // easyjson:json
 type URLResponse struct {
-	URL string `json:"result"`
+	URL string `json:"short-url"`
 }
