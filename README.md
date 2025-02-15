@@ -56,10 +56,14 @@ go mod tidy
 3. Build and run the server:
 
 ```bash
-cd cmd/shortener
-go run main.go
+go run cmd/shortener/main.go
 ```
-4. You can now interact with the server using any HTTP client (e.g., curl or Postman).
+4. Now you can interact with the server, using client menu:
+
+```bash
+go run cmd/client/main.go
+```
+Also you can use any HTTP client (e.g., curl or Postman).
 
 ## Usage
 

@@ -13,10 +13,8 @@ func main() {
 
 	config.InitConfig()
 	middleware.InitLogger()
-	dbService, err := db.InitDBService(config.Cfg)
-	if err != nil {
-		panic(err)
-	}
+
+	dbService := db.InitDBService(config.Cfg, middleware.Logger)
 	router := server.InitHandlers(config.Cfg, middleware.Logger, dbService)
 
 	fmt.Println("Starting server at " + config.Cfg.LocalServerAddr)

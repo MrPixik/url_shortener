@@ -69,3 +69,11 @@ func shortenApiPostRequest(client *resty.Client, url requestUrl) {
 	fmt.Println("Content-Type: " + r.Header().Get("Content-Type"))
 	fmt.Println("Body: " + string(r.Body()))
 }
+func pingDBRequest(client *resty.Client) {
+	r, err := client.R().
+		Get("ping")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println("Status:" + r.Status())
+}
