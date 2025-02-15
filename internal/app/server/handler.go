@@ -7,6 +7,7 @@ import (
 	"github.com/MrPixik/url_shortener/internal/app/models"
 	easyjson2 "github.com/MrPixik/url_shortener/internal/app/models/easyjson"
 	"github.com/MrPixik/url_shortener/internal/config"
+	"github.com/MrPixik/url_shortener/internal/db"
 	"github.com/go-chi/chi/v5"
 	"github.com/mailru/easyjson"
 	"go.uber.org/zap"
@@ -21,7 +22,7 @@ func generateShortUrl(longUrl string) string {
 }
 
 // InitHandlers func for creating new chi.Router with all Handlers
-func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger) chi.Router {
+func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger, db db.DatabaseService) chi.Router {
 	router := chi.NewRouter()
 
 	router.Use(middleware.LoggingMiddleware(logger), middleware.CompressingMiddleware)
@@ -37,6 +38,10 @@ func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger) chi.Router {
 			r.Post("/shorten", func(w http.ResponseWriter, r *http.Request) {
 				shortenURLPostHandler(w, r, cfg)
 			})
+		})
+		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
+			pingDBHandler(w, r, cfg, db)
+
 		})
 	})
 	return router
@@ -141,4 +146,11 @@ func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 	}
 	w.WriteHeader(http.StatusBadRequest)
 
+}
+func pingDBHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	err := db.Ping()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
 }

@@ -10,6 +10,7 @@ type Config struct {
 	LocalServerAddr string `env:"SERVER_ADDRESS"`
 	ShortURLAddr    string `env:"BASE_URL"`
 	FileStoragePath string `env:"FILE_STORAGE_PATH"`
+	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
 var Cfg *Config
@@ -33,7 +34,10 @@ func InitConfig() {
 	}
 
 	if Cfg.FileStoragePath == "" {
-		pflag.StringVar(&Cfg.FileStoragePath, "f", "./tmp/short-url-db.json", "file storage path")
+		pflag.StringVar(&Cfg.FileStoragePath, "f", "./tmp/short-url-db.json", "File storage path")
+	}
+	if Cfg.DatabaseDSN == "" {
+		pflag.StringVar(&Cfg.DatabaseDSN, "d", "user=postgres password=admin host=localhost port=5432 dbname=url_shortener_db sslmode=disable", "Data Source Name")
 	}
 
 	pflag.Parse()

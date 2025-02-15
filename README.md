@@ -13,6 +13,9 @@ url_shortener/
 ├── cmd/
 │   ├── client/                  # Client-side implementation
 │   │   └── main.go
+│   │   └── clients.go
+│   │   └── models.go
+│   │   └── menu.go
 │   ├── shortener/               # Server-side implementation
 │   │   ├── main.go              # Main entry point for the shortener service
 │   │   └── README.md            # Documentation for the shortener
@@ -26,7 +29,12 @@ url_shortener/
 │   │   │   ├── handler.go       # URL shortening handler
 │   │   │   ├── handler_test.go  # Unit tests for the handler
 │   └── config/                  # Configuration
-│       └── config.go
+│   │   └── config.go
+│   ├── db/                      # Database logic
+│   │   ├── init.go              # DatabaseService initialization
+│   │   ├── interfaces.go   
+│   │   ├── models.go   
+├── tmp/                         # Temp files
 ├── go.mod                       # Go module file
 └── .gitignore                   # Git ignore file
 ```
