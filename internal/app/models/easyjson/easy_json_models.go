@@ -1,6 +1,13 @@
 package easyjson
 
 // easyjson:json
+type URLDB struct {
+	ID       int64  `json:"id"`
+	Original string `json:"original"`
+	Short    string `json:"short"`
+}
+
+// easyjson:json
 type URLFileRecord struct {
 	Original string `json:"original"`
 	Short    string `json:"short"`

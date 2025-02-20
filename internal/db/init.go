@@ -14,6 +14,10 @@ func InitDBService(cfg *config.Config, logger *zap.SugaredLogger) *Storage {
 	if err != nil {
 		logger.Fatal(err)
 	}
+	err = dbService.init()
+	if err != nil {
+		logger.Fatal(err)
+	}
 	logger.Infoln("Database connected successfully")
 	return dbService
 }

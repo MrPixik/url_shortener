@@ -36,7 +36,7 @@ func easyjson3e29e0f0DecodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson
 			continue
 		}
 		switch key {
-		case "result":
+		case "short-url":
 			out.URL = string(in.String())
 		default:
 			in.SkipRecursive()
@@ -53,7 +53,7 @@ func easyjson3e29e0f0EncodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson
 	first := true
 	_ = first
 	{
-		const prefix string = ",\"result\":"
+		const prefix string = ",\"short-url\":"
 		out.RawString(prefix[1:])
 		out.String(string(in.URL))
 	}
@@ -221,4 +221,84 @@ func (v *URLFileRecord) UnmarshalJSON(data []byte) error {
 // UnmarshalEasyJSON supports easyjson.Unmarshaler interface
 func (v *URLFileRecord) UnmarshalEasyJSON(l *jlexer.Lexer) {
 	easyjson3e29e0f0DecodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson2(l, v)
+}
+func easyjson3e29e0f0DecodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson3(in *jlexer.Lexer, out *URLDB) {
+	isTopLevel := in.IsStart()
+	if in.IsNull() {
+		if isTopLevel {
+			in.Consumed()
+		}
+		in.Skip()
+		return
+	}
+	in.Delim('{')
+	for !in.IsDelim('}') {
+		key := in.UnsafeFieldName(false)
+		in.WantColon()
+		if in.IsNull() {
+			in.Skip()
+			in.WantComma()
+			continue
+		}
+		switch key {
+		case "id":
+			out.ID = int64(in.Int64())
+		case "original":
+			out.Original = string(in.String())
+		case "short":
+			out.Short = string(in.String())
+		default:
+			in.SkipRecursive()
+		}
+		in.WantComma()
+	}
+	in.Delim('}')
+	if isTopLevel {
+		in.Consumed()
+	}
+}
+func easyjson3e29e0f0EncodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson3(out *jwriter.Writer, in URLDB) {
+	out.RawByte('{')
+	first := true
+	_ = first
+	{
+		const prefix string = ",\"id\":"
+		out.RawString(prefix[1:])
+		out.Int64(int64(in.ID))
+	}
+	{
+		const prefix string = ",\"original\":"
+		out.RawString(prefix)
+		out.String(string(in.Original))
+	}
+	{
+		const prefix string = ",\"short\":"
+		out.RawString(prefix)
+		out.String(string(in.Short))
+	}
+	out.RawByte('}')
+}
+
+// MarshalJSON supports json.Marshaler interface
+func (v URLDB) MarshalJSON() ([]byte, error) {
+	w := jwriter.Writer{}
+	easyjson3e29e0f0EncodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson3(&w, v)
+	return w.Buffer.BuildBytes(), w.Error
+}
+
+// MarshalEasyJSON supports easyjson.Marshaler interface
+func (v URLDB) MarshalEasyJSON(w *jwriter.Writer) {
+	easyjson3e29e0f0EncodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson3(w, v)
+}
+
+// UnmarshalJSON supports json.Unmarshaler interface
+func (v *URLDB) UnmarshalJSON(data []byte) error {
+	r := jlexer.Lexer{Data: data}
+	easyjson3e29e0f0DecodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson3(&r, v)
+	return r.Error()
+}
+
+// UnmarshalEasyJSON supports easyjson.Unmarshaler interface
+func (v *URLDB) UnmarshalEasyJSON(l *jlexer.Lexer) {
+	easyjson3e29e0f0DecodeGithubComMrPixikUrlShortenerInternalAppModelsEasyjson3(l, v)
 }

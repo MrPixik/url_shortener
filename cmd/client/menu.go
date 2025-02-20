@@ -31,11 +31,13 @@ func readInputString(msg string) string {
 	longUrl = strings.TrimSuffix(longUrl, "\n")
 	return longUrl
 }
+
 func printMainMenuMsg() {
 	for _, str := range mainMenuMsg {
 		fmt.Println(str)
 	}
 }
+
 func menu(client *resty.Client) {
 	var reqUrl requestUrl
 	for {
