@@ -4,9 +4,13 @@ import (
 	"bytes"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"github.com/MrPixik/url_shortener/internal/app/middleware"
+	"github.com/MrPixik/url_shortener/internal/app/models/easyjson"
 	"github.com/MrPixik/url_shortener/internal/config"
+	"github.com/MrPixik/url_shortener/internal/db/mocks"
+	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"io"
@@ -17,7 +21,6 @@ import (
 
 func init() {
 	config.InitConfig()
-	config.Cfg.FileStoragePath = "S:\\MYFILES\\programming\\Go\\Git Projects\\url_shortener\\tmp\\short-url-db.json"
 	middleware.InitLogger()
 }
 
@@ -44,13 +47,34 @@ func TestMainPagePostHandler(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusCreated,
 				contentType: "text/plain",
-				response:    "http://localhost:8080/" + createHash("https://practicum.yandex.ru/"),
+				response:    "http://localhost:8080/" + createHash("ok"),
 			},
 			method: http.MethodPost,
 			target: "/",
-			body:   []byte("https://practicum.yandex.ru/"),
+			body:   []byte("ok"),
+		},
+		{
+			name: "Test Empty Request",
+			want: want{
+				statusCode:  http.StatusBadRequest,
+				contentType: "text/plain; charset=utf-8",
+				response:    "Empty originalURL\n",
+			},
+			method: http.MethodPost,
+			target: "/",
+			body:   []byte(""),
 		},
 	}
+
+	//Mocks initialization
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockDatabaseService(ctrl)
+
+	m.EXPECT().
+		CreateUrl(createHash("ok"), "ok").
+		Return(nil)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -58,7 +82,7 @@ func TestMainPagePostHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			response := httptest.NewRecorder()
 
-			mainPagePostHandler(response, request, config.Cfg)
+			mainPagePostHandler(response, request, config.Cfg, m)
 			result := response.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -102,12 +126,19 @@ func TestMainPagePostBadRequestHandler(t *testing.T) {
 			target: "/",
 		},
 	}
+
+	//Mocks initialization
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockDatabaseService(ctrl)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, &errorReader{})
 			response := httptest.NewRecorder()
 
-			mainPagePostHandler(response, request, config.Cfg)
+			mainPagePostHandler(response, request, config.Cfg, m)
 
 			result := response.Result()
 
@@ -116,6 +147,7 @@ func TestMainPagePostBadRequestHandler(t *testing.T) {
 		})
 	}
 }
+
 func TestMainPageGetHandler(t *testing.T) {
 	type want struct {
 		statusCode int
@@ -135,25 +167,46 @@ func TestMainPageGetHandler(t *testing.T) {
 			},
 			method: http.MethodGet,
 			target: "http://localhost:8080/" + createHash("https://practicum.yandex.ru/"),
-		}, {
+		},
+		{
 			name: "Test Bad Request",
 			want: want{
 				statusCode: http.StatusBadRequest,
 			},
 			method: http.MethodGet,
-			target: "http://localhost:8080/" + createHash("unknown URL"),
+			target: "http://localhost:8080/" + "unknown_URL",
+		},
+		{
+			name: "Test DB Error",
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+			method: http.MethodGet,
+			target: "http://localhost:8080/" + "drop_database_url",
 		},
 	}
+
+	//Mocks initialization
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockDatabaseService(ctrl)
+
+	m.EXPECT().
+		GetUrlByShortName(createHash("https://practicum.yandex.ru/")).
+		Return(easyjson.URLDB{Original: "https://practicum.yandex.ru/"}, nil)
+	m.EXPECT().
+		GetUrlByShortName("unknown_URL").
+		Return(easyjson.URLDB{}, nil)
+	m.EXPECT().
+		GetUrlByShortName("drop_database_url").
+		Return(easyjson.URLDB{}, errors.New("crash"))
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			router := InitHandlers(config.Cfg, middleware.Logger)
+			router := InitHandlers(config.Cfg, middleware.Logger, m)
 
-			postRequest := httptest.NewRequest(http.MethodPost, "/", bytes.NewBuffer([]byte("https://practicum.yandex.ru/")))
-			postResponse := httptest.NewRecorder()
-			router.ServeHTTP(postResponse, postRequest)
-
-			//fmt.Println("\"" + tt.target + "\"")
 			getRequest := httptest.NewRequest(tt.method, tt.target, nil)
 			getResonse := httptest.NewRecorder()
 			router.ServeHTTP(getResonse, getRequest)

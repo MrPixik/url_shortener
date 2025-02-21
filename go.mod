@@ -6,6 +6,7 @@ require (
 	github.com/caarlos0/env/v11 v11.3.1
 	github.com/go-chi/chi/v5 v5.2.1
 	github.com/go-resty/resty/v2 v2.16.5
+	github.com/golang/mock v1.6.0
 	github.com/jackc/pgx/v5 v5.7.2
 	github.com/mailru/easyjson v0.9.0
 	github.com/spf13/pflag v1.0.6
