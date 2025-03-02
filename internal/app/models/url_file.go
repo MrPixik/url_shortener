@@ -1,6 +1,6 @@
 package models
 
-// OUTDATED //
+//  //
 //type URLFileHandler struct {
 //	file    *os.File
 //	writer  *bufio.Writer

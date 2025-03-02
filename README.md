@@ -6,37 +6,41 @@ A URL shortening service written in Go that allows users to submit URLs and rece
 
 ```bash
 url_shortener/
-├── .github/                    # GitHub workflows for CI/CD
-│   ├── workflows/
-│   │   ├── shortenertest.yml    # Test workflow
-│   │   └── statictest.yml       # Linter/static analysis workflow
-├── cmd/
-│   ├── client/                  # Client-side implementation
-│   │   └── main.go
-│   │   └── clients.go
-│   │   └── models.go
-│   │   └── menu.go
-│   ├── shortener/               # Server-side implementation
-│   │   ├── main.go              # Main entry point for the shortener service
-│   │   └── README.md            # Documentation for the shortener
-├── internal/
-│   ├── app/
-│   │   ├── middleware/          # Middleware logic (e.g., logging, compressing# )
-│   │   ├── models/              # Models and EasyJSON files
-│   │   │   ├── easy_json_models.go         # Models for URLRequest and URLResponse
-│   │   │   └── easy_json_models_easyjson.go # Generated EasyJSON code
-│   │   ├── server/              # Server handlers and tests
-│   │   │   ├── handler.go       # URL shortening handler
-│   │   │   ├── handler_test.go  # Unit tests for the handler
-│   └── config/                  # Configuration
+├── .github/                        # GitHub workflows for CI/CD
+│   ├── workflows/                  #
+│   │   ├── shortenertest.yml       # Test workflow
+│   │   └── statictest.yml          # Linter/static analysis workflow
+├── cmd/                            #
+│   ├── client/                     # Client-side implementation
+│   │   └── main.go                 #
+│   │   └── clients.go              #
+│   │   └── models.go               #
+│   │   └── menu.go                 #
+│   ├── shortener/                  # Server-side implementation
+│   │   ├── main.go                 # Main entry point for the shortener service
+├── internal/                       #
+│   ├── app/                        #
+│   │   ├── middleware/             # Middleware logic
+│   │   │   ├── compressing.go      #     
+│   │   │   ├── logging.go          #
+│   │   ├── models/                 # Models
+│   │   │   ├── easyjson/           # EasyJSON files
+│   │   │   │   ├── server.go       # Models for requests and responses processing
+│   │   │   ├── db.go               # Models for working with database client 
+│   │   │   ├── url_file.go         # Models for working with file ///OUTDATED///
+│   │   ├── server/                 # Server handlers and tests
+│   │   │   ├── handler.go          # URL shortening handler
+│   │   │   ├── handler_test.go     # Unit tests for the handler
+│   └── config/                     # Configuration
 │   │   └── config.go
-│   ├── db/                      # Database logic
-│   │   ├── init.go              # DatabaseService initialization
-│   │   ├── interfaces.go   
-│   │   ├── models.go   
-├── tmp/                         # Temp files
-├── go.mod                       # Go module file
-└── .gitignore                   # Git ignore file
+│   ├── db/                         # Database logic
+│   │   ├── mocks/                  # Mocks for unit-testing
+│   │   │   ├── mocks_db_service.go # 
+│   │   ├── init.go                 # DatabaseService initialization
+│   │   ├── interfaces.go           #
+│   │   ├── models.go               #
+├── go.mod                          # Go module file
+└── .gitignore                      # Git ignore file
 ```
 ## Installation
 
@@ -65,29 +69,17 @@ go run cmd/client/main.go
 ```
 Also you can use any HTTP client (e.g., curl or Postman).
 
-## Usage
+## API Documentation
 
-Shortening a URL
-To shorten a URL, send a POST request to the server with a JSON payload containing the URL to be shortened:
+| HTTP Method | Endpoint                          | Description                                              |
+|-------------|-----------------------------------|----------------------------------------------------------|
+| **POST**    | `/`                               | Create a new short URL. (Content-Type: text/plain)       |
+| **POST**    | `/api/shorten`                    | Create a new short URL. (Content-Type: application/json) |
+| **POST**    | `/api/shorten/batch`              | Create a new short URLs.                                 |
+| **GET**     | `/{id}`                           | Go to URL, using it's short implementation.              |
+| **GET**     | `/ping`                           | Ping to database.                                        |
 
-```bash
-curl -X POST http://localhost:8080/shorten \
-     -H "Content-Type: application/json" \
-     -d '{"url":"https://www.example.com"}'
-```
-Example response:
 
-```json
-{
-  "url": "http://localhost:8080/abc123"
-}
-```
-Expanding a URL
-To retrieve the original URL, send a GET request to the shortened URL:
-
-```bash
-curl http://localhost:8080/abc123
-```
 ## Configuration
 
 The server can be configured through the internal/config/config.go file, where you can specify parameters such as:
