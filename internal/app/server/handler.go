@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"github.com/MrPixik/url_shortener/internal/app/middleware"
+	"github.com/MrPixik/url_shortener/internal/app/models"
 	easyjson2 "github.com/MrPixik/url_shortener/internal/app/models/easyjson"
 	"github.com/MrPixik/url_shortener/internal/config"
 	"github.com/MrPixik/url_shortener/internal/db"
@@ -18,7 +19,7 @@ import (
 
 const (
 	ErrMsgDBWriteError = "An error occurred while writing to database"
-	ErrMsgDuplicateURL = "Short URL already exist"
+	ErrMsgDuplicateURL = "Short OrigURL already exist"
 )
 
 func generateShortUrl(longUrl string) string {
@@ -43,6 +44,9 @@ func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger, db db.DatabaseS
 			r.Post("/shorten", func(w http.ResponseWriter, r *http.Request) {
 				shortenURLPostHandler(w, r, cfg, db)
 			})
+			r.Post("/shorten/batch", func(w http.ResponseWriter, r *http.Request) {
+				urlBatchPostHandler(w, r, cfg, db)
+			})
 		})
 		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
 			pingDBHandler(w, r, cfg, db)
@@ -54,7 +58,7 @@ func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger, db db.DatabaseS
 
 func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
 
-	//Reading original URL from request's body
+	//Reading original OrigURL from request's body
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -65,11 +69,11 @@ func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		http.Error(w, "Empty originalURL", http.StatusBadRequest)
 		return
 	}
-	//Creating short URL
+	//Creating short OrigURL
 	shortURL := generateShortUrl(originalURL)
 
 	//Creating new object in database
-	if err := db.CreateUrl(shortURL, originalURL); err != nil {
+	if err := db.CreateUrl(r.Context(), shortURL, originalURL); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
@@ -110,13 +114,21 @@ func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.C
 	}
 
 	//Creating shortURL
-	shortURL := generateShortUrl(urlReq.URL)
+	shortURL := generateShortUrl(urlReq.OrigURL)
 
-	//Creating new object in database
+	//Initialization response struct
 	urlRes := easyjson2.URLResponse{
-		URL: "http://" + cfg.ShortURLAddr + "/" + shortURL,
+		ShortURL: "http://" + cfg.ShortURLAddr + "/" + shortURL,
 	}
-	if err := db.CreateUrl(shortURL, urlReq.URL); err != nil {
+	//Creating new object in database
+	if err := db.CreateUrl(r.Context(), shortURL, urlReq.OrigURL); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				http.Error(w, ErrMsgDuplicateURL, http.StatusConflict)
+				return
+			}
+		}
 		http.Error(w, ErrMsgDBWriteError, http.StatusInternalServerError)
 		return
 	}
@@ -129,13 +141,56 @@ func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.C
 	}
 }
 
+func urlBatchPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	//Unmarshalling JSON-array from request
+	var urlsReq easyjson2.URLRequestArr
+	if err := easyjson.UnmarshalFromReader(r.Body, &urlsReq); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	urlsMap := make([]models.URLMapping, len(urlsReq))
+	urlsRes := make(easyjson2.URLResponseArr, len(urlsReq))
+	for i, urlReq := range urlsReq {
+		//Creating shortURL
+		shortURL := generateShortUrl(urlReq.OrigURL)
+
+		// Initialization map's parameters
+		urlsMap[i].OrigURL = urlReq.OrigURL
+		urlsMap[i].ShortURL = shortURL
+
+		// Initialization of response's parameters
+		urlsRes[i].Id = urlReq.Id
+		urlsRes[i].ShortURL = shortURL
+	}
+	// Writing to database
+	if err := db.CreateUrls(r.Context(), urlsMap); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) {
+			if pgErr.Code == "23505" {
+				http.Error(w, ErrMsgDuplicateURL, http.StatusConflict)
+				return
+			}
+		}
+		http.Error(w, ErrMsgDBWriteError, http.StatusInternalServerError)
+		return
+	}
+
+	//Configuring response's parameters
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
+	if _, err := easyjson.MarshalToWriter(urlsRes, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+}
+
 func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
 
-	//Reading short URL from URL's parameter
+	//Reading short OrigURL from OrigURL's parameter
 	shortURL := chi.URLParam(r, "shortURL")
 
-	//Extracting URL object from database
-	urlObj, err := db.GetUrlByShortName(shortURL)
+	//Extracting OrigURL object from database
+	urlObj, err := db.GetUrlByShortName(r.Context(), shortURL)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -176,6 +231,7 @@ func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 	//w.WriteHeader(http.StatusBadRequest)
 
 }
+
 func pingDBHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
 	err := db.Ping()
 	if err != nil {

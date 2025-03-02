@@ -53,7 +53,7 @@ func LoggingMiddleware(logger Log) func(http.Handler) http.Handler {
 			duration := time.Since(start)
 
 			logger.Infoln(
-				"URL", r.RequestURI,
+				"OrigURL", r.RequestURI,
 				"Method:", r.Method,
 				"Request Duration:", duration,
 				"Status:", responseData.status,

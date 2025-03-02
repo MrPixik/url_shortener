@@ -30,7 +30,7 @@ func InitConfig() {
 	}
 
 	if Cfg.ShortURLAddr == "" {
-		pflag.StringVar(&Cfg.ShortURLAddr, "b", "localhost:8080", "Short URL address")
+		pflag.StringVar(&Cfg.ShortURLAddr, "b", "localhost:8080", "Short OrigURL address")
 	}
 
 	if Cfg.FileStoragePath == "" {

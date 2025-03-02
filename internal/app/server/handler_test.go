@@ -7,7 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/MrPixik/url_shortener/internal/app/middleware"
-	"github.com/MrPixik/url_shortener/internal/app/models/easyjson"
+	"github.com/MrPixik/url_shortener/internal/app/models"
 	"github.com/MrPixik/url_shortener/internal/config"
 	"github.com/MrPixik/url_shortener/internal/db/mocks"
 	"github.com/golang/mock/gomock"
@@ -73,7 +73,7 @@ func TestMainPagePostHandler(t *testing.T) {
 	m := mocks.NewMockDatabaseService(ctrl)
 
 	m.EXPECT().
-		CreateUrl(createHash("ok"), "ok").
+		CreateUrl(gomock.Any(), createHash("ok"), "ok").
 		Return(nil)
 
 	for _, tt := range tests {
@@ -193,14 +193,14 @@ func TestMainPageGetHandler(t *testing.T) {
 	m := mocks.NewMockDatabaseService(ctrl)
 
 	m.EXPECT().
-		GetUrlByShortName(createHash("https://practicum.yandex.ru/")).
-		Return(easyjson.URLDB{Original: "https://practicum.yandex.ru/"}, nil)
+		GetUrlByShortName(gomock.Any(), createHash("https://practicum.yandex.ru/")).
+		Return(models.URLDB{Original: "https://practicum.yandex.ru/"}, nil)
 	m.EXPECT().
-		GetUrlByShortName("unknown_URL").
-		Return(easyjson.URLDB{}, nil)
+		GetUrlByShortName(gomock.Any(), "unknown_URL").
+		Return(models.URLDB{}, nil)
 	m.EXPECT().
-		GetUrlByShortName("drop_database_url").
-		Return(easyjson.URLDB{}, errors.New("crash"))
+		GetUrlByShortName(gomock.Any(), "drop_database_url").
+		Return(models.URLDB{}, errors.New("crash"))
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

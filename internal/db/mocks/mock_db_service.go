@@ -5,9 +5,10 @@
 package mocks
 
 import (
+	context "context"
+	easyjson "github.com/MrPixik/url_shortener/internal/app/models"
 	reflect "reflect"
 
-	easyjson "github.com/MrPixik/url_shortener/internal/app/models/easyjson"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -35,32 +36,32 @@ func (m *MockDatabaseService) EXPECT() *MockDatabaseServiceMockRecorder {
 }
 
 // CreateUrl mocks base method.
-func (m *MockDatabaseService) CreateUrl(shortURL, originalURL string) error {
+func (m *MockDatabaseService) CreateUrl(ctx context.Context, shortURL, originalURL string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUrl", shortURL, originalURL)
+	ret := m.ctrl.Call(m, "CreateUrl", ctx, shortURL, originalURL)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateUrl indicates an expected call of CreateUrl.
-func (mr *MockDatabaseServiceMockRecorder) CreateUrl(shortURL, originalURL interface{}) *gomock.Call {
+func (mr *MockDatabaseServiceMockRecorder) CreateUrl(ctx, shortURL, originalURL interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUrl", reflect.TypeOf((*MockDatabaseService)(nil).CreateUrl), shortURL, originalURL)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUrl", reflect.TypeOf((*MockDatabaseService)(nil).CreateUrl), ctx, shortURL, originalURL)
 }
 
 // GetUrlByShortName mocks base method.
-func (m *MockDatabaseService) GetUrlByShortName(shortUrl string) (easyjson.URLDB, error) {
+func (m *MockDatabaseService) GetUrlByShortName(ctx context.Context, shortUrl string) (easyjson.URLDB, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetUrlByShortName", shortUrl)
+	ret := m.ctrl.Call(m, "GetUrlByShortName", ctx, shortUrl)
 	ret0, _ := ret[0].(easyjson.URLDB)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetUrlByShortName indicates an expected call of GetUrlByShortName.
-func (mr *MockDatabaseServiceMockRecorder) GetUrlByShortName(shortUrl interface{}) *gomock.Call {
+func (mr *MockDatabaseServiceMockRecorder) GetUrlByShortName(ctx, shortUrl interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUrlByShortName", reflect.TypeOf((*MockDatabaseService)(nil).GetUrlByShortName), shortUrl)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetUrlByShortName", reflect.TypeOf((*MockDatabaseService)(nil).GetUrlByShortName), ctx, shortUrl)
 }
 
 // Ping mocks base method.
