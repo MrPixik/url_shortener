@@ -6,10 +6,6 @@ A URL shortening service written in Go that allows users to submit URLs and rece
 
 ```bash
 url_shortener/
-├── .github/                        # GitHub workflows for CI/CD
-│   ├── workflows/                  #
-│   │   ├── shortenertest.yml       # Test workflow
-│   │   └── statictest.yml          # Linter/static analysis workflow
 ├── cmd/                            #
 │   ├── client/                     # Client-side implementation
 │   │   └── main.go                 #
