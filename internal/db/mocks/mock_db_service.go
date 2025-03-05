@@ -6,9 +6,9 @@ package mocks
 
 import (
 	context "context"
-	easyjson "github.com/MrPixik/url_shortener/internal/app/models"
 	reflect "reflect"
 
+	models "github.com/MrPixik/url_shortener/internal/app/models"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -49,11 +49,25 @@ func (mr *MockDatabaseServiceMockRecorder) CreateUrl(ctx, shortURL, originalURL 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUrl", reflect.TypeOf((*MockDatabaseService)(nil).CreateUrl), ctx, shortURL, originalURL)
 }
 
+// CreateUrls mocks base method.
+func (m *MockDatabaseService) CreateUrls(ctx context.Context, urls []models.URLMapping) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUrls", ctx, urls)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// CreateUrls indicates an expected call of CreateUrls.
+func (mr *MockDatabaseServiceMockRecorder) CreateUrls(ctx, urls interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUrls", reflect.TypeOf((*MockDatabaseService)(nil).CreateUrls), ctx, urls)
+}
+
 // GetUrlByShortName mocks base method.
-func (m *MockDatabaseService) GetUrlByShortName(ctx context.Context, shortUrl string) (easyjson.URLDB, error) {
+func (m *MockDatabaseService) GetUrlByShortName(ctx context.Context, shortUrl string) (models.URLDB, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUrlByShortName", ctx, shortUrl)
-	ret0, _ := ret[0].(easyjson.URLDB)
+	ret0, _ := ret[0].(models.URLDB)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

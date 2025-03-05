@@ -148,6 +148,66 @@ func TestMainPagePostBadRequestHandler(t *testing.T) {
 	}
 }
 
+func TestShortenPostHandler(t *testing.T) {
+	type want struct {
+		statusCode  int
+		contentType string
+		body        []byte
+	}
+	tests := []struct {
+		name   string
+		want   want
+		method string
+		target string
+		body   []byte
+	}{
+		{
+			name: "Test ok",
+			want: want{
+				statusCode:  http.StatusCreated,
+				contentType: "application/json",
+				body:        []byte("{\"short-url\":\"http://localhost:8080/" + createHash("ok") + "\"}"),
+			},
+			method: http.MethodPost,
+			target: "/api/shorten",
+			body:   []byte("{\"url\":\"ok\"}"),
+		},
+	}
+
+	//Mocks initialization
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	m := mocks.NewMockDatabaseService(ctrl)
+
+	m.EXPECT().
+		CreateUrl(gomock.Any(), createHash("ok"), "ok").
+		Return(nil)
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
+			recorder := httptest.NewRecorder()
+
+			shortenURLPostHandler(recorder, request, config.Cfg, m)
+
+			response := recorder.Result()
+
+			assert.Equal(t, tt.want.statusCode, response.StatusCode)
+
+			defer response.Body.Close()
+			body, err := io.ReadAll(response.Body)
+			require.NoError(t, err)
+
+			fmt.Println(string(body))
+
+			assert.Equal(t, tt.want.body, body)
+
+			assert.Equal(t, tt.want.contentType, response.Header.Get("Content-Type"))
+		})
+	}
+}
+
 func TestMainPageGetHandler(t *testing.T) {
 	type want struct {
 		statusCode int

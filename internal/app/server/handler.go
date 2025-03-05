@@ -23,8 +23,8 @@ const (
 )
 
 func generateShortUrl(longUrl string) string {
-	hasher := md5.New()
-	return hex.EncodeToString(hasher.Sum([]byte(longUrl))[0:12])
+	hash := md5.New()
+	return hex.EncodeToString(hash.Sum([]byte(longUrl))[0:12])
 }
 
 // InitHandlers func for creating new chi.Router with all Handlers
