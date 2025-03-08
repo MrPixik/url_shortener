@@ -95,7 +95,7 @@ func loginPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 	}
 	jwtToken, err := middleware.GenerateJWT(user.Login)
 	if err != nil {
-		http.Error(w)
+		http.Error(w, ErrIncorrectLoginData, http.StatusUnauthorized)
 	}
 	w.Header().Set("Authorization", "Bearer "+jwtToken)
 	w.WriteHeader(http.StatusOK)
