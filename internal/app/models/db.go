@@ -1,9 +1,10 @@
 package models
 
-type URLDB struct {
+type UrlsObj struct {
 	ID       int64
 	Original string
 	Short    string
+	UserId   int
 }
 type URLMapping struct {
 	OrigURL  string

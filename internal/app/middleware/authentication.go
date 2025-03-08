@@ -11,13 +11,13 @@ import (
 
 const (
 	SUPER_SECRET_KEY    = "ANDRUHA CHMO EBANOE"
-	TOKENDURATION       = time.Minute
+	TOKENDURATION       = 15 * time.Minute
 	ErrMsgNotAuthorized = "Missing login data"
 )
 
 type Claims struct {
 	jwt.RegisteredClaims
-	UserLogin string
+	UserId int
 }
 
 func AuthenticationMiddleware(next http.Handler) http.Handler {
@@ -34,22 +34,22 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 			return
 		}
 		tokenString := parts[1]
-		userLogin, err := getUserLogin(tokenString)
+		userID, err := getUserLogin(tokenString)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user_login", userLogin)
+		ctx := context.WithValue(r.Context(), "user_id", userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
-func GenerateJWT(login string) (string, error) {
+func GenerateJWT(id int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKENDURATION)),
 		},
-		UserLogin: login,
+		UserId: id,
 	})
 
 	tokenString, err := token.SignedString([]byte(SUPER_SECRET_KEY))
@@ -59,7 +59,7 @@ func GenerateJWT(login string) (string, error) {
 
 	return tokenString, nil
 }
-func getUserLogin(jwtString string) (string, error) {
+func getUserLogin(jwtString string) (int, error) {
 	claims := &Claims{}
 
 	token, err := jwt.ParseWithClaims(jwtString, claims, func(t *jwt.Token) (interface{}, error) {
@@ -69,10 +69,10 @@ func getUserLogin(jwtString string) (string, error) {
 		return []byte(SUPER_SECRET_KEY), nil
 	})
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 	if !token.Valid {
-		return "", err
+		return -1, err
 	}
-	return claims.UserLogin, nil
+	return claims.UserId, nil
 }

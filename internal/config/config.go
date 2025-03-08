@@ -19,7 +19,7 @@ func InitConfig() (*Config, error) {
 
 	err := env.Parse(cfg)
 	if err != nil {
-		return
+		return nil, err
 	}
 
 	if cfg.LocalServerAddr == "" {
@@ -38,4 +38,6 @@ func InitConfig() (*Config, error) {
 	}
 
 	pflag.Parse()
+
+	return cfg, nil
 }

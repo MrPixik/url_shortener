@@ -260,13 +260,13 @@ func TestMainPageGetHandler(t *testing.T) {
 
 	m.EXPECT().
 		GetUrlByShortName(gomock.Any(), createHash("https://practicum.yandex.ru/")).
-		Return(models.URLDB{Original: "https://practicum.yandex.ru/"}, nil)
+		Return(models.UrlsObj{Original: "https://practicum.yandex.ru/"}, nil)
 	m.EXPECT().
 		GetUrlByShortName(gomock.Any(), "unknown_URL").
-		Return(models.URLDB{}, nil)
+		Return(models.UrlsObj{}, nil)
 	m.EXPECT().
 		GetUrlByShortName(gomock.Any(), "drop_database_url").
-		Return(models.URLDB{}, errors.New("crash"))
+		Return(models.UrlsObj{}, errors.New("crash"))
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
