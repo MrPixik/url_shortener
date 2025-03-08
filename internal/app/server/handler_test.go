@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"errors"
@@ -10,6 +11,7 @@ import (
 	"github.com/MrPixik/url_shortener/internal/app/models"
 	"github.com/MrPixik/url_shortener/internal/config"
 	"github.com/MrPixik/url_shortener/internal/db/mocks"
+	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -47,6 +49,7 @@ func TestMainPagePostHandler(t *testing.T) {
 		method string
 		target string
 		body   []byte
+		userID int
 	}{
 		{
 			name: "Test OK",
@@ -58,6 +61,7 @@ func TestMainPagePostHandler(t *testing.T) {
 			method: http.MethodPost,
 			target: "/",
 			body:   []byte("ok"),
+			userID: 1,
 		},
 		{
 			name: "Test Empty Request",
@@ -69,6 +73,7 @@ func TestMainPagePostHandler(t *testing.T) {
 			method: http.MethodPost,
 			target: "/",
 			body:   []byte(""),
+			userID: 0,
 		},
 	}
 
@@ -79,7 +84,7 @@ func TestMainPagePostHandler(t *testing.T) {
 	m := mocks.NewMockDatabaseService(ctrl)
 
 	m.EXPECT().
-		CreateUrl(gomock.Any(), createHash("ok"), "ok").
+		CreateUrl(gomock.Any(), createHash("ok"), "ok", 1).
 		Return(nil)
 
 	for _, tt := range tests {
@@ -88,7 +93,9 @@ func TestMainPagePostHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			response := httptest.NewRecorder()
 
-			mainPagePostHandler(response, request, cfg, m)
+			ctx := context.WithValue(request.Context(), middleware.ContextKeyUserID, tt.userID)
+
+			mainPagePostHandler(response, request.WithContext(ctx), cfg, m)
 			result := response.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -166,6 +173,7 @@ func TestShortenPostHandler(t *testing.T) {
 		method string
 		target string
 		body   []byte
+		userID int
 	}{
 		{
 			name: "Test ok",
@@ -177,6 +185,7 @@ func TestShortenPostHandler(t *testing.T) {
 			method: http.MethodPost,
 			target: "/api/shorten",
 			body:   []byte("{\"url\":\"ok\"}"),
+			userID: 1,
 		},
 	}
 
@@ -187,7 +196,7 @@ func TestShortenPostHandler(t *testing.T) {
 	m := mocks.NewMockDatabaseService(ctrl)
 
 	m.EXPECT().
-		CreateUrl(gomock.Any(), createHash("ok"), "ok").
+		CreateUrl(gomock.Any(), createHash("ok"), "ok", 1).
 		Return(nil)
 
 	for _, tt := range tests {
@@ -195,7 +204,9 @@ func TestShortenPostHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			recorder := httptest.NewRecorder()
 
-			shortenURLPostHandler(recorder, request, cfg, m)
+			ctx := context.WithValue(request.Context(), middleware.ContextKeyUserID, tt.userID)
+
+			shortenURLPostHandler(recorder, request.WithContext(ctx), cfg, m)
 
 			response := recorder.Result()
 
@@ -205,7 +216,7 @@ func TestShortenPostHandler(t *testing.T) {
 			body, err := io.ReadAll(response.Body)
 			require.NoError(t, err)
 
-			fmt.Println(string(body))
+			//fmt.Println(string(body))
 
 			assert.Equal(t, tt.want.body, body)
 
@@ -224,6 +235,7 @@ func TestMainPageGetHandler(t *testing.T) {
 		want   want
 		method string
 		target string
+		userID int
 	}{
 		{
 			name: "Test OK",
@@ -233,6 +245,7 @@ func TestMainPageGetHandler(t *testing.T) {
 			},
 			method: http.MethodGet,
 			target: "http://localhost:8080/" + createHash("https://practicum.yandex.ru/"),
+			userID: 1,
 		},
 		{
 			name: "Test Bad Request",
@@ -241,6 +254,7 @@ func TestMainPageGetHandler(t *testing.T) {
 			},
 			method: http.MethodGet,
 			target: "http://localhost:8080/" + "unknown_URL",
+			userID: 1,
 		},
 		{
 			name: "Test DB Error",
@@ -249,6 +263,7 @@ func TestMainPageGetHandler(t *testing.T) {
 			},
 			method: http.MethodGet,
 			target: "http://localhost:8080/" + "drop_database_url",
+			userID: 1,
 		},
 	}
 
@@ -259,25 +274,30 @@ func TestMainPageGetHandler(t *testing.T) {
 	m := mocks.NewMockDatabaseService(ctrl)
 
 	m.EXPECT().
-		GetUrlByShortName(gomock.Any(), createHash("https://practicum.yandex.ru/")).
+		GetUrlByShortName(gomock.Any(), createHash("https://practicum.yandex.ru/"), 1).
 		Return(models.UrlsObj{Original: "https://practicum.yandex.ru/"}, nil)
 	m.EXPECT().
-		GetUrlByShortName(gomock.Any(), "unknown_URL").
+		GetUrlByShortName(gomock.Any(), "unknown_URL", 1).
 		Return(models.UrlsObj{}, nil)
 	m.EXPECT().
-		GetUrlByShortName(gomock.Any(), "drop_database_url").
+		GetUrlByShortName(gomock.Any(), "drop_database_url", 1).
 		Return(models.UrlsObj{}, errors.New("crash"))
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			router := InitHandlers(cfg, middleware.Logger, m)
+			router := chi.NewRouter()
+
+			router.Get("/{shortURL}", wrap(mainPageGetHandler, cfg, m))
 
 			getRequest := httptest.NewRequest(tt.method, tt.target, nil)
-			getResonse := httptest.NewRecorder()
-			router.ServeHTTP(getResonse, getRequest)
+			getResponse := httptest.NewRecorder()
 
-			getResult := getResonse.Result()
+			ctx := context.WithValue(getRequest.Context(), middleware.ContextKeyUserID, tt.userID)
+
+			router.ServeHTTP(getResponse, getRequest.WithContext(ctx))
+
+			getResult := getResponse.Result()
 
 			assert.Equal(t, tt.want.statusCode, getResult.StatusCode)
 			assert.Equal(t, tt.want.Location, getResult.Header.Get("Location"))

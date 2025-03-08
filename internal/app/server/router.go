@@ -24,13 +24,13 @@ func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger, db db.DatabaseS
 	router.Get("/ping", wrap(pingDBHandler, cfg, db))
 
 	//Protected endpoints
-	router.Route("/", func(r chi.Router) {
-		r.Use(middleware.AuthenticationMiddleware)
+	router.Route("/", func(router chi.Router) {
+		router.Use(middleware.AuthenticationMiddleware)
 
-		r.Get("/{shortURL}", wrap(mainPageGetHandler, cfg, db))
-		r.Post("/", wrap(mainPagePostHandler, cfg, db))
+		router.Get("/{shortURL}", wrap(mainPageGetHandler, cfg, db))
+		router.Post("/", wrap(mainPagePostHandler, cfg, db))
 
-		r.Route("/api", func(api chi.Router) {
+		router.Route("/api", func(api chi.Router) {
 			api.Post("/shorten", wrap(shortenURLPostHandler, cfg, db))
 			api.Post("/shorten/batch", wrap(urlBatchPostHandler, cfg, db))
 		})

@@ -92,7 +92,7 @@ func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 	shortURL := generateShortUrl(originalURL)
 
 	//Reading userID from request's context (which was created in authentication middleware)
-	userId := r.Context().Value("user_id").(int)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
 
 	//Creating new object in database
 	if err := db.CreateUrl(r.Context(), shortURL, originalURL, userId); err != nil {
@@ -144,7 +144,7 @@ func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.C
 	}
 
 	//Reading userID from request's context (which was created in authentication middleware)
-	userId := r.Context().Value("user_id").(int)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
 
 	//Creating new object in database
 	if err := db.CreateUrl(r.Context(), shortURL, urlReq.OrigURL, userId); err != nil {
@@ -191,7 +191,7 @@ func urlBatchPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 	}
 
 	//Reading userID from request's context (which was created in authentication middleware)
-	userId := r.Context().Value("user_id").(int)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
 
 	// Writing to database
 	if err := db.CreateUrls(r.Context(), urlsMap, userId); err != nil {
@@ -220,7 +220,7 @@ func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 	shortURL := chi.URLParam(r, "shortURL")
 
 	//Reading userID from request's context (which was created in authentication middleware)
-	userId := r.Context().Value("user_id").(int)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
 
 	//Extracting OrigURL object from database
 	urlObj, err := db.GetUrlByShortName(r.Context(), shortURL, userId)

@@ -11,8 +11,9 @@ import (
 
 const (
 	SUPER_SECRET_KEY    = "ANDRUHA CHMO EBANOE"
-	TOKENDURATION       = 15 * time.Minute
+	TokenDuration       = 15 * time.Minute
 	ErrMsgNotAuthorized = "Missing login data"
+	ContextKeyUserID    = "user_id"
 )
 
 type Claims struct {
@@ -40,14 +41,14 @@ func AuthenticationMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "user_id", userID)
+		ctx := context.WithValue(r.Context(), ContextKeyUserID, userID)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 func GenerateJWT(id int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKENDURATION)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenDuration)),
 		},
 		UserId: id,
 	})
