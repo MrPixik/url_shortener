@@ -11,12 +11,15 @@ import (
 
 func main() {
 
-	config.InitConfig()
+	cfg, err := config.InitConfig()
+	if err != nil {
+		panic(err)
+	}
 	middleware.InitLogger()
 
-	dbService := db.InitDBService(config.Cfg, middleware.Logger)
-	router := server.InitHandlers(config.Cfg, middleware.Logger, dbService)
+	dbService := db.InitDBService(cfg, middleware.Logger)
+	router := server.InitHandlers(cfg, middleware.Logger, dbService)
 
-	fmt.Println("Starting server at " + config.Cfg.LocalServerAddr)
-	http.ListenAndServe(config.Cfg.LocalServerAddr, router)
+	fmt.Println("Starting server at " + cfg.LocalServerAddr)
+	http.ListenAndServe(cfg.LocalServerAddr, router)
 }

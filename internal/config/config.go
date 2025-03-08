@@ -13,31 +13,28 @@ type Config struct {
 	DatabaseDSN     string `env:"DATABASE_DSN"`
 }
 
-var Cfg *Config
-
 // InitConfig func for config initialization
-func InitConfig() {
+func InitConfig() (*Config, error) {
 	cfg := &Config{}
-	Cfg = cfg
 
-	err := env.Parse(Cfg)
+	err := env.Parse(cfg)
 	if err != nil {
 		return
 	}
 
-	if Cfg.LocalServerAddr == "" {
-		pflag.StringVar(&Cfg.LocalServerAddr, "a", "localhost:8080", "local server address")
+	if cfg.LocalServerAddr == "" {
+		pflag.StringVar(&cfg.LocalServerAddr, "a", "localhost:8080", "local server address")
 	}
 
-	if Cfg.ShortURLAddr == "" {
-		pflag.StringVar(&Cfg.ShortURLAddr, "b", "localhost:8080", "Short OrigURL address")
+	if cfg.ShortURLAddr == "" {
+		pflag.StringVar(&cfg.ShortURLAddr, "b", "localhost:8080", "Short OrigURL address")
 	}
 
-	if Cfg.FileStoragePath == "" {
-		pflag.StringVar(&Cfg.FileStoragePath, "f", "./tmp/short-url-db.json", "File storage path")
+	if cfg.FileStoragePath == "" {
+		pflag.StringVar(&cfg.FileStoragePath, "f", "./tmp/short-url-db.json", "File storage path")
 	}
-	if Cfg.DatabaseDSN == "" {
-		pflag.StringVar(&Cfg.DatabaseDSN, "d", "user=postgres password=admin host=localhost port=5432 dbname=url_shortener_db sslmode=disable", "Data Source Name")
+	if cfg.DatabaseDSN == "" {
+		pflag.StringVar(&cfg.DatabaseDSN, "d", "user=postgres password=admin host=localhost port=5432 dbname=url_shortener_db sslmode=disable", "Data Source Name")
 	}
 
 	pflag.Parse()
