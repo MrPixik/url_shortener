@@ -93,7 +93,12 @@ func loginPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config
 		http.Error(w, ErrIncorrectLoginData, http.StatusUnauthorized)
 		return
 	}
-
+	jwtToken, err := middleware.GenerateJWT(user.Login)
+	if err != nil {
+		http.Error(w)
+	}
+	w.Header().Set("Authorization", "Bearer "+jwtToken)
+	w.WriteHeader(http.StatusOK)
 }
 
 func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
