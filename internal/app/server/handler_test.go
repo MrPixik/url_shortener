@@ -19,8 +19,14 @@ import (
 	"testing"
 )
 
+var cfg *config.Config
+
 func init() {
-	config.InitConfig()
+	var err error
+	cfg, err = config.InitConfig()
+	if err != nil {
+		return
+	}
 	middleware.InitLogger()
 }
 
@@ -82,7 +88,7 @@ func TestMainPagePostHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			response := httptest.NewRecorder()
 
-			mainPagePostHandler(response, request, config.Cfg, m)
+			mainPagePostHandler(response, request, cfg, m)
 			result := response.Result()
 
 			assert.Equal(t, tt.want.statusCode, result.StatusCode)
@@ -138,7 +144,7 @@ func TestMainPagePostBadRequestHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, &errorReader{})
 			response := httptest.NewRecorder()
 
-			mainPagePostHandler(response, request, config.Cfg, m)
+			mainPagePostHandler(response, request, cfg, m)
 
 			result := response.Result()
 
@@ -189,7 +195,7 @@ func TestShortenPostHandler(t *testing.T) {
 			request := httptest.NewRequest(tt.method, tt.target, bytes.NewBuffer(tt.body))
 			recorder := httptest.NewRecorder()
 
-			shortenURLPostHandler(recorder, request, config.Cfg, m)
+			shortenURLPostHandler(recorder, request, cfg, m)
 
 			response := recorder.Result()
 
@@ -265,7 +271,7 @@ func TestMainPageGetHandler(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			router := InitHandlers(config.Cfg, middleware.Logger, m)
+			router := InitHandlers(cfg, middleware.Logger, m)
 
 			getRequest := httptest.NewRequest(tt.method, tt.target, nil)
 			getResonse := httptest.NewRecorder()

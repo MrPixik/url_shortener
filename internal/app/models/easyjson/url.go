@@ -1,6 +1,6 @@
 package easyjson
 
-//go:generate easyjson -all server.go
+//go:generate easyjson -all url.go
 
 // URLRequest struct for processing requests with single JSON URL.
 // easyjson:json

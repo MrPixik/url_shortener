@@ -11,4 +11,6 @@ type DatabaseService interface {
 	CreateUrl(ctx context.Context, shortURL, originalURL string) error
 	CreateUrls(ctx context.Context, urls []models.URLMapping) error
 	GetUrlByShortName(ctx context.Context, shortUrl string) (models.URLDB, error)
+	CreateUser(ctx context.Context, login, password string) error
+	AuthenticateUser(ctx context.Context, login, password string) (bool, error)
 }

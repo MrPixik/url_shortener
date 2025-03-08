@@ -18,8 +18,9 @@ import (
 )
 
 const (
-	ErrMsgDBWriteError = "An error occurred while writing to database"
-	ErrMsgDuplicateURL = "Short OrigURL already exist"
+	ErrMsgDBWriteError    = "An error occurred while writing to database"
+	ErrMsgDuplicateURL    = "Short OrigURL already exist"
+	ErrIncorrectLoginData = "Incorrect login or password"
 )
 
 func generateShortUrl(longUrl string) string {
@@ -54,6 +55,45 @@ func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger, db db.DatabaseS
 		})
 	})
 	return router
+}
+
+func registrationPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	user := easyjson2.User{}
+
+	//Unmarshalling JSON from request
+	if err := easyjson.UnmarshalFromReader(r.Body, &user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Writing new user to database
+	if err := db.CreateUser(r.Context(), user.Login, user.Password); err != nil {
+		http.Error(w, ErrMsgDBWriteError, http.StatusInternalServerError)
+		return
+	}
+	//Configuring response's parameters
+	w.WriteHeader(http.StatusCreated)
+}
+
+func loginPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	user := easyjson2.User{}
+
+	//Unmarshalling JSON from request
+	if err := easyjson.UnmarshalFromReader(r.Body, &user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//Authentication via database
+	isAuthenticated, err := db.AuthenticateUser(r.Context(), user.Login, user.Password)
+	if err != nil {
+		http.Error(w, ErrMsgDBWriteError, http.StatusInternalServerError)
+		return
+	}
+	if !isAuthenticated {
+		http.Error(w, ErrIncorrectLoginData, http.StatusUnauthorized)
+		return
+	}
+
 }
 
 func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
@@ -106,7 +146,7 @@ func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 
 func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
 
-	//Unmarshalling json from request
+	//Unmarshalling JSON from request
 	var urlReq easyjson2.URLRequest
 	if err := easyjson.UnmarshalFromReader(r.Body, &urlReq); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
