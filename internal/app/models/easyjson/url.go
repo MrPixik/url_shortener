@@ -21,7 +21,7 @@ type URLRequestArr []URLRequestArrELem
 // URLResponse struct for writing responses with single JSON URL.
 // easyjson:json
 type URLResponse struct {
-	ShortURL string `json:"short-url"`
+	ShortURL string `json:"short_url"`
 }
 
 // easyjson:json
@@ -34,3 +34,12 @@ type URLResponseArrElem struct {
 //
 //easyjson:json
 type URLResponseArr []URLResponseArrElem
+
+//easyjson:json
+type URLMapping struct {
+	ShortURL string `json:"short_url"`
+	OrigURL  string `json:"original_url"`
+}
+
+//easyjson:json
+type UrlMappingArr []URLMapping

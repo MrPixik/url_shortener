@@ -33,6 +33,7 @@ func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger, db db.DatabaseS
 		router.Route("/api", func(api chi.Router) {
 			api.Post("/shorten", wrap(shortenURLPostHandler, cfg, db))
 			api.Post("/shorten/batch", wrap(urlBatchPostHandler, cfg, db))
+			api.Get("/user/urls", wrap(userGetHandler, cfg, db))
 		})
 	})
 

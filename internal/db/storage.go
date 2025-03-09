@@ -84,6 +84,30 @@ func (storage *Storage) GetUrlByShortName(ctx context.Context, shortUrl string, 
 	return url, err
 }
 
+func (storage *Storage) GetUrlsByUserId(ctx context.Context, userId int) ([]models.URLMapping, error) {
+	query := `SELECT short_url, long_url FROM urls WHERE user_id = $1`
+
+	ctx, cancel := context.WithTimeout(ctx, REQUESTMAXTIME)
+	defer cancel()
+
+	rows, err := storage.db.QueryContext(ctx, query, userId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	urlsSlice := make([]models.URLMapping, 0)
+	for rows.Next() {
+		urls := models.URLMapping{}
+
+		if err = rows.Scan(&urls.ShortURL, &urls.OrigURL); err != nil {
+			return nil, err
+		}
+		urlsSlice = append(urlsSlice, urls)
+	}
+	return urlsSlice, nil
+}
+
 func (storage *Storage) CreateUser(ctx context.Context, login, password string) error {
 	query := `INSERT INTO users (login, password) VALUES ($1,$2)`
 

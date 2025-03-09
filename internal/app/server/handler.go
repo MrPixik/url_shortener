@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"github.com/MrPixik/url_shortener/internal/app/middleware"
@@ -263,4 +264,29 @@ func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 	//}
 	//w.WriteHeader(http.StatusBadRequest)
 
+}
+
+func userGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
+
+	urlsDB, err := db.GetUrlsByUserId(r.Context(), userId)
+	if err != nil {
+		if ok := errors.As(err, &sql.ErrNoRows); ok {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+	urls := make(easyjson2.UrlMappingArr, len(urlsDB))
+	for i, v := range urlsDB {
+		urls[i].ShortURL = v.ShortURL
+		urls[i].OrigURL = v.OrigURL
+	}
+
+	//Configuring response's parameters
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if _, err = easyjson.MarshalToWriter(urls, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
