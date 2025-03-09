@@ -271,7 +271,7 @@ func userGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, 
 
 	urlsDB, err := db.GetUrlsByUserId(r.Context(), userId)
 	if err != nil {
-		if ok := errors.As(err, &sql.ErrNoRows); ok {
+		if ok := errors.Is(err, sql.ErrNoRows); ok {
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}

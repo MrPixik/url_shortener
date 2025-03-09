@@ -180,7 +180,7 @@ func TestShortenPostHandler(t *testing.T) {
 			want: want{
 				statusCode:  http.StatusCreated,
 				contentType: "application/json",
-				body:        []byte("{\"short-url\":\"http://localhost:8080/" + createHash("ok") + "\"}"),
+				body:        []byte("{\"short_url\":\"http://localhost:8080/" + createHash("ok") + "\"}"),
 			},
 			method: http.MethodPost,
 			target: "/api/shorten",
