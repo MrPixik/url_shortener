@@ -2,6 +2,7 @@ package server
 
 import (
 	"crypto/md5"
+	"database/sql"
 	"encoding/hex"
 	"errors"
 	"github.com/MrPixik/url_shortener/internal/app/middleware"
@@ -12,14 +13,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/mailru/easyjson"
-	"go.uber.org/zap"
 	"io"
 	"net/http"
 )
 
 const (
-	ErrMsgDBWriteError = "An error occurred while writing to database"
-	ErrMsgDuplicateURL = "Short OrigURL already exist"
+	ErrMsgDBWriteError    = "An error occurred while writing to database"
+	ErrMsgDuplicateURL    = "Short OrigURL already exist"
+	ErrIncorrectLoginData = "Incorrect login or password"
 )
 
 func generateShortUrl(longUrl string) string {
@@ -27,33 +28,52 @@ func generateShortUrl(longUrl string) string {
 	return hex.EncodeToString(hash.Sum([]byte(longUrl))[0:12])
 }
 
-// InitHandlers func for creating new chi.Router with all Handlers
-func InitHandlers(cfg *config.Config, logger *zap.SugaredLogger, db db.DatabaseService) chi.Router {
-	router := chi.NewRouter()
+func registrationPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	user := easyjson2.User{}
 
-	router.Use(middleware.LoggingMiddleware(logger), middleware.CompressingMiddleware)
+	//Unmarshalling JSON from request
+	if err := easyjson.UnmarshalFromReader(r.Body, &user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	// Writing new user to database
+	if err := db.CreateUser(r.Context(), user.Login, user.Password); err != nil {
+		http.Error(w, ErrMsgDBWriteError, http.StatusInternalServerError)
+		return
+	}
+	//Configuring response's parameters
+	w.WriteHeader(http.StatusCreated)
+}
 
-	router.Route("/", func(r chi.Router) {
-		r.Get("/{shortURL}", func(w http.ResponseWriter, r *http.Request) {
-			mainPageGetHandler(w, r, cfg, db)
-		})
-		r.Post("/", func(w http.ResponseWriter, r *http.Request) {
-			mainPagePostHandler(w, r, cfg, db)
-		})
-		r.Route("/api", func(r chi.Router) {
-			r.Post("/shorten", func(w http.ResponseWriter, r *http.Request) {
-				shortenURLPostHandler(w, r, cfg, db)
-			})
-			r.Post("/shorten/batch", func(w http.ResponseWriter, r *http.Request) {
-				urlBatchPostHandler(w, r, cfg, db)
-			})
-		})
-		r.Get("/ping", func(w http.ResponseWriter, r *http.Request) {
-			pingDBHandler(w, r, cfg, db)
+func loginPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	user := easyjson2.User{}
 
-		})
-	})
-	return router
+	//Unmarshalling JSON from request
+	if err := easyjson.UnmarshalFromReader(r.Body, &user); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	//Authentication via database
+	userId, err := db.AuthenticateUser(r.Context(), user.Login, user.Password)
+	if err != nil {
+		http.Error(w, ErrIncorrectLoginData, http.StatusInternalServerError)
+		return
+	}
+	jwtToken, err := middleware.GenerateJWT(userId)
+	if err != nil {
+		http.Error(w, ErrIncorrectLoginData, http.StatusUnauthorized)
+	}
+	w.Header().Set("Authorization", "Bearer "+jwtToken)
+	w.WriteHeader(http.StatusOK)
+}
+
+func pingDBHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	err := db.Ping()
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
@@ -72,8 +92,11 @@ func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 	//Creating short OrigURL
 	shortURL := generateShortUrl(originalURL)
 
+	//Reading userID from request's context (which was created in authentication middleware)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
+
 	//Creating new object in database
-	if err := db.CreateUrl(r.Context(), shortURL, originalURL); err != nil {
+	if err := db.CreateUrl(r.Context(), shortURL, originalURL, userId); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
@@ -106,7 +129,7 @@ func mainPagePostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 
 func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
 
-	//Unmarshalling json from request
+	//Unmarshalling JSON from request
 	var urlReq easyjson2.URLRequest
 	if err := easyjson.UnmarshalFromReader(r.Body, &urlReq); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -120,8 +143,12 @@ func shortenURLPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.C
 	urlRes := easyjson2.URLResponse{
 		ShortURL: "http://" + cfg.ShortURLAddr + "/" + shortURL,
 	}
+
+	//Reading userID from request's context (which was created in authentication middleware)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
+
 	//Creating new object in database
-	if err := db.CreateUrl(r.Context(), shortURL, urlReq.OrigURL); err != nil {
+	if err := db.CreateUrl(r.Context(), shortURL, urlReq.OrigURL, userId); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
@@ -163,8 +190,12 @@ func urlBatchPostHandler(w http.ResponseWriter, r *http.Request, cfg *config.Con
 		urlsRes[i].Id = urlReq.Id
 		urlsRes[i].ShortURL = shortURL
 	}
+
+	//Reading userID from request's context (which was created in authentication middleware)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
+
 	// Writing to database
-	if err := db.CreateUrls(r.Context(), urlsMap); err != nil {
+	if err := db.CreateUrls(r.Context(), urlsMap, userId); err != nil {
 		var pgErr *pgconn.PgError
 		if errors.As(err, &pgErr) {
 			if pgErr.Code == "23505" {
@@ -189,8 +220,11 @@ func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 	//Reading short OrigURL from OrigURL's parameter
 	shortURL := chi.URLParam(r, "shortURL")
 
+	//Reading userID from request's context (which was created in authentication middleware)
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
+
 	//Extracting OrigURL object from database
-	urlObj, err := db.GetUrlByShortName(r.Context(), shortURL)
+	urlObj, err := db.GetUrlByShortName(r.Context(), shortURL, userId)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -232,10 +266,27 @@ func mainPageGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Conf
 
 }
 
-func pingDBHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
-	err := db.Ping()
+func userGetHandler(w http.ResponseWriter, r *http.Request, cfg *config.Config, db db.DatabaseService) {
+	userId := r.Context().Value(middleware.ContextKeyUserID).(int)
+
+	urlsDB, err := db.GetUrlsByUserId(r.Context(), userId)
 	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
+		if ok := errors.Is(err, sql.ErrNoRows); ok {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+	urls := make(easyjson2.UrlMappingArr, len(urlsDB))
+	for i, v := range urlsDB {
+		urls[i].ShortURL = v.ShortURL
+		urls[i].OrigURL = v.OrigURL
+	}
+
+	//Configuring response's parameters
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	if _, err = easyjson.MarshalToWriter(urls, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
 }
