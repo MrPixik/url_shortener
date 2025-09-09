@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	SUPER_SECRET_KEY    = "ANDRUHA CHMO EBANOE"
+	SUPER_SECRET_KEY    = "SUPER_SECRET_KEY"
 	TokenDuration       = 15 * time.Minute
 	ErrMsgNotAuthorized = "Missing login data"
 	ContextKeyUserID    = "user_id"
